@@ -1,0 +1,21 @@
+	In the original mapqueue.cc jobs were simulated from a queue (jobQueue). 
+This queue was accessed by two different types of threads. One thread type is a 
+"producer" which creates a job of random length (time) with the method makeJobs
+and then pushes the job on the queue. The other thread type are the "consumers".
+The number of these are determined by a command line argument (defaulted at 1).
+These threads use takeJobs: it first checks that jobQueue is not empty. The job
+is then popped from the queue and simulated. The problem with mapqueue arises
+when more than one of the threads attempts to use the jobQueue at one time. One
+of the most obvious of issues that may arise is if a consumer gets the last job
+from the queue but before it is popped off, another consumer attempts to access
+the queue. This will result in at least one of the consumers to attempting to 
+pop from the empty queue.
+	The jobQueue is the aspect of the program that needs to be protected 
+with mutex. In makeJobs the lock was put in place before the method pushes onto
+the queue and unlocks after the size is accessed. takeJobs is more complex. The
+lock is put in place before the method checks if the queue is empty. This 
+prevents the last job from being removed between the check and the method accesses
+the queue. An unlock inside the if-statement is after the access of the queue
+size but before the job is actually simulated. Another unlock is placed inside
+an else-statement in case the queue is empty and the if-statement is never 
+entered.
